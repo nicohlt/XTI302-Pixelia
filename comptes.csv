@@ -1,0 +1,12 @@
+login;nom;groupe_principal;groupes_secondaires
+nicolas;Nicolas;admins;acces_ssh
+leo;Leo;admins;acces_ssh
+support;Compte Support;support;acces_ssh
+dev1;Developpeur Un;dev;
+dev2;Developpeur Deux;dev;
+design1;Designeur Un;design;
+design2;Designer Deux;design;
+commercial1;Commercial Un;commercial;
+commercial2;Commercial Deux;commercial;
+freelance1;Freelance Un;freelance;
+freelance2;Freelance Deux;freelance;
