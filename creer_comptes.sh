@@ -49,3 +49,28 @@ do
       echo "Cle SSH installee pour $login"
     fi
 done
+
+
+#TEsts dossiers
+
+mkdir -p /srv/projets/externe
+mkdir -p /srv/maquettes
+mkdir -p /srv/clients
+
+# ACL config + permissions
+
+setfacl -m g:dev:rwx,g:design:rx,g:freelance:--x,o::--- /srv/projets
+setfacl -m g:dev:rwx,g:design:rx,g:freelance:rwx,o::--- /srv/projets/externe
+setfacl -m g:dev:rx,g:design:rwx,g:commercial:rx,o::--- /srv/maquettes
+setfacl -m g:commercial:rwx,o::--- /srv/clients
+
+echo "Permissions ACL correctement config !"
+
+# ACL par defaut
+
+setfacl -d -m g:dev:rwx,g:design:rx,o::--- /srv/projets
+setfacl -d -m g:dev:rwx,g:design:rx,g:freelance:rwx,o::--- /srv/projets/externe
+setfacl -d -m g:dev:rx,g:design:rwx,g:commercial:rx,o::--- /srv/maquettes
+setfacl -d -m g:commercial:rwx,o::--- /srv/clients
+
+echo "ACL par defaut bien config !"
