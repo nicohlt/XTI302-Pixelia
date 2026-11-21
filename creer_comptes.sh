@@ -15,3 +15,21 @@ do
 done
 
 echo "Termine"
+while IFS=";" read -r login nom groupe autres
+do
+    if [ "$login" != "login" ]; then
+
+        if ! id "$login" > /dev/null 2>&1; then
+            useradd -m -s /bin/bash -g "$groupe" "$login"
+            echo "Utilisateur cree : $login"
+        fi
+	usermod -g "$groupe" "$login"
+
+        if [ -n "$autres" ]; then
+            usermod -aG "$autres" "$login"
+        fi
+
+    fi
+done < comptes.csv
+
+echo "Utilisateurs termines"
