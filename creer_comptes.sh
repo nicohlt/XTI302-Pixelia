@@ -74,3 +74,13 @@ setfacl -d -m g:dev:rx,g:design:rwx,g:commercial:rx,o::--- /srv/maquettes
 setfacl -d -m g:commercial:rwx,o::--- /srv/clients
 
 echo "ACL par defaut bien config !"
+
+while IFS=";" read -r login nom groupe autres #securisation des doss
+do
+    if [ "$login" != "login" ]; then
+        chmod 700 "/home/$login"
+    fi
+done < comptes.csv
+
+echo "Dossiers personnels proteges"
+
