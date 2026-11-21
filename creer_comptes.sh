@@ -14,7 +14,8 @@ do
     fi
 done
 
-echo "Termine"
+echo "Groupe Terminé"
+
 while IFS=";" read -r login nom groupe autres
 do
     if [ "$login" != "login" ]; then
@@ -32,4 +33,19 @@ do
     fi
 done < comptes.csv
 
-echo "Utilisateurs termines"
+echo "Utilisateurs terminés"
+
+for fichier in config/cles/*.pub
+do
+  login=$(basename "$fichier" .pub)
+    if id "$login" > /dev/null 2>&1; then
+      mkdir -p "/home/$login/.ssh"
+      cp "$fichier" "/home/$login/.ssh/authorized_keys"
+
+      chmod 700 "/home/$login/.ssh"
+      chmod 600 "/home/$login/.ssh/authorized_keys"
+      chown -R "$login" "/home/$login/.ssh"
+
+      echo "Cle SSH installee pour $login"
+    fi
+done
