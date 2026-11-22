@@ -59,4 +59,16 @@ done
 passwd -l root
 echo "Compte root verrouille"
 
+# Configuration SSH
+cp config/ssh/sshd_config.d/pixelia.conf /etc/ssh/sshd_config.d/pixelia.conf
+
+# Verifier la configuration avant de redemarrer SSH
+if sshd -t; then
+    systemctl restart ssh
+    echo "SSH configure"
+else
+    echo "Erreur dans la configuration SSH"
+    exit 1
+fi
+
 echo "Installation terminee"
