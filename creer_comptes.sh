@@ -1,10 +1,31 @@
 #!/bin/bash
-# Création des groupes
+# Creation des groupes, des comptes, des cles SSH et des dossiers de /srv
+# a partir du fichier comptes.csv
+
+# -e : on s'arrete si une commande plante
+# -u : on s'arrete si on utilise une variable qui n'existe pas
+# -o pipefail : une erreur dans un pipe compte comme une erreur
+set -euo pipefail
+
+# Date de fin du semestre : les comptes freelance expirent a cette date
+DATE_FIN_FREELANCE="2027-01-31"
 
 if [ "$EUID" -ne 0 ]; then
     echo "Il faut lancer ce script avec sudo"
     exit 1
 fi
+
+# On se place dans le dossier du script pour trouver comptes.csv et config/
+# meme si on lance le script depuis un autre dossier
+DOSSIER_SCRIPT=$(dirname "$0")
+cd "$DOSSIER_SCRIPT"
+
+if [ ! -f comptes.csv ]; then
+    echo "Erreur : le fichier comptes.csv est introuvable"
+    exit 1
+fi
+
+# Création des groupes
 
 for groupe in admins acces_ssh support dev design commercial freelance
 do
@@ -28,6 +49,12 @@ do
 
         if [ -n "$autres" ]; then
             usermod -aG "$autres" "$login"
+        fi
+
+        # Les freelance expirent a la fin du semestre
+        if [ "$groupe" = "freelance" ]; then
+            chage -E "$DATE_FIN_FREELANCE" "$login"
+            echo "Compte $login expire le $DATE_FIN_FREELANCE"
         fi
 
     fi
