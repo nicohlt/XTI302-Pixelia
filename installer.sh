@@ -16,7 +16,7 @@ fi
 
 # Paquets
 apt-get update
-apt-get install -y sudo acl nftables fail2ban python3-systemd unattended-upgrades
+apt-get install -y sudo acl nftables fail2ban python3-systemd unattended-upgrades rsync cron parted
 echo "Paquets installes"
 
 # Comptes, groupes, cles SSH et dossiers /srv
@@ -113,5 +113,63 @@ echo "Journal persistant configure"
 cp config/apt/20auto-upgrades /etc/apt/apt.conf.d/20auto-upgrades
 systemctl enable unattended-upgrades
 echo "Mises a jour automatiques configurees"
+
+# ---------- Sauvegarde (B1, B2, B3) ----------
+
+# Le second disque de la VM s'appelle /dev/sdb
+if [ ! -b /dev/sdb ]; then
+    echo "Erreur : pas de second disque /dev/sdb pour les sauvegardes" >&2
+    exit 6
+fi
+
+# On partitionne et on formate SEULEMENT si la partition n'existe pas encore.
+# Si on relance installer.sh, on ne reformate pas : les sauvegardes sont gardees.
+if [ ! -b /dev/sdb1 ]; then
+    parted -s /dev/sdb mklabel gpt
+    parted -s /dev/sdb mkpart primary ext4 0% 100%
+    # on attend que le systeme voie la nouvelle partition
+    sleep 2
+    mkfs.ext4 /dev/sdb1
+    echo "Second disque partitionne et formate"
+else
+    echo "La partition /dev/sdb1 existe deja, on ne la reformate pas"
+fi
+
+# Montage permanent : une ligne dans /etc/fstab (lue a chaque demarrage)
+# On utilise l'UUID de la partition : il ne change pas, meme si le nom sdb change
+mkdir -p /sauvegardes
+if ! grep -q "/sauvegardes" /etc/fstab; then
+    UUID=$(blkid -s UUID -o value /dev/sdb1)
+    echo "UUID=$UUID /sauvegardes ext4 defaults 0 2" >> /etc/fstab
+    systemctl daemon-reload
+    echo "Montage ajoute dans /etc/fstab"
+fi
+
+if ! mountpoint -q /sauvegardes; then
+    mount /sauvegardes
+fi
+
+# B3 : seuls root et le groupe admins peuvent entrer dans /sauvegardes
+mkdir -p /sauvegardes/versions
+chown root:admins /sauvegardes
+chmod 750 /sauvegardes
+echo "Dossier /sauvegardes reserve aux admins"
+
+# Le script appartient a root, lui seul peut le lire et le modifier
+cp sauvegarde.sh /usr/local/sbin/sauvegarde.sh
+chown root:root /usr/local/sbin/sauvegarde.sh
+chmod 700 /usr/local/sbin/sauvegarde.sh
+
+# B2 : planification avec cron
+cp config/cron.d/sauvegarde /etc/cron.d/sauvegarde
+chown root:root /etc/cron.d/sauvegarde
+chmod 644 /etc/cron.d/sauvegarde
+systemctl enable cron
+systemctl restart cron
+echo "Sauvegarde planifiee tous les jours a 2h"
+
+# Premiere sauvegarde tout de suite
+/usr/local/sbin/sauvegarde.sh >> /var/log/sauvegarde.log 2>&1
+echo "Premiere sauvegarde faite (journal : /var/log/sauvegarde.log)"
 
 echo "Installation terminee"

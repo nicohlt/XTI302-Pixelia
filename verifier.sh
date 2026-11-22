@@ -397,6 +397,82 @@ test_J4() {
 }
 
 
+# B1 : sauvegarde incrementale avec versions datees
+test_B1() {
+    if mountpoint -q /sauvegardes; then
+        ok "B1" "le second disque est monte sur /sauvegardes"
+    else
+        ko "B1" "/sauvegardes n'est pas monte"
+    fi
+
+    if grep -q "/sauvegardes" /etc/fstab; then
+        ok "B1" "le montage est dans /etc/fstab (permanent)"
+    else
+        ko "B1" "le montage n'est pas dans /etc/fstab"
+    fi
+
+    if grep -q -- "--link-dest" /usr/local/sbin/sauvegarde.sh 2> /dev/null; then
+        ok "B1" "sauvegarde.sh est incrementale (--link-dest)"
+    else
+        ko "B1" "sauvegarde.sh n'utilise pas --link-dest"
+    fi
+
+    nombre=$(ls -1 /sauvegardes/versions 2> /dev/null | wc -l)
+    if [ "$nombre" -ge 1 ] && [ "$nombre" -le 7 ]; then
+        ok "B1" "$nombre version(s) de sauvegarde (7 maximum)"
+    else
+        ko "B1" "$nombre version(s) de sauvegarde (attendu : entre 1 et 7)"
+    fi
+
+    # Les ACL doivent etre gardees dans la sauvegarde
+    derniere=$(ls -1 /sauvegardes/versions 2> /dev/null | tail -n 1)
+    if getfacl "/sauvegardes/versions/$derniere/srv/projets" 2> /dev/null | grep -q "default:group:dev:rwx"; then
+        ok "B1" "les ACL sont gardees dans la sauvegarde"
+    else
+        ko "B1" "les ACL ne sont pas dans la sauvegarde"
+    fi
+}
+
+# B2 : sauvegarde planifiee et journalisee
+test_B2() {
+    if grep -q "/usr/local/sbin/sauvegarde.sh" /etc/cron.d/sauvegarde 2> /dev/null; then
+        ok "B2" "la sauvegarde est planifiee dans /etc/cron.d/sauvegarde"
+    else
+        ko "B2" "pas de planification dans /etc/cron.d/sauvegarde"
+    fi
+
+    if systemctl is-active cron > /dev/null; then
+        ok "B2" "le service cron est demarre"
+    else
+        ko "B2" "le service cron n'est pas demarre"
+    fi
+
+    if [ -s /var/log/sauvegarde.log ]; then
+        ok "B2" "le journal /var/log/sauvegarde.log existe"
+    else
+        ko "B2" "pas de journal /var/log/sauvegarde.log"
+    fi
+}
+
+# B3 : sauvegardes accessibles seulement aux admins
+test_B3() {
+    if sudo -u leo test -r /sauvegardes; then
+        ok "B3" "leo (admins) peut lire /sauvegardes"
+    else
+        ko "B3" "leo (admins) ne peut pas lire /sauvegardes"
+    fi
+
+    for login in dev1 support freelance1
+    do
+        if sudo -u "$login" test -r /sauvegardes; then
+            ko "B3" "$login peut lire /sauvegardes"
+        else
+            ok "B3" "$login ne peut pas lire /sauvegardes"
+        fi
+    done
+}
+
+
 # Lancement de tous les tests
 test_C1
 test_C2
@@ -412,6 +488,9 @@ test_J2
 test_J3
 test_J4
 test_D1
+test_B1
+test_B2
+test_B3
 
 echo "--- $REUSSIS / $TOTAL tests reussis"
 

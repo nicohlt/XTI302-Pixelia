@@ -1,0 +1,4 @@
+# Sauvegarde tous les jours a 2h du matin (B2)
+# La sortie est ajoutee dans /var/log/sauvegarde.log : chaque execution est journalisee
+# m h dom mon dow user command
+0 2 * * * root /usr/local/sbin/sauvegarde.sh >> /var/log/sauvegarde.log 2>&1
