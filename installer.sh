@@ -37,6 +37,14 @@ done
 chmod 440 /etc/sudoers.d/admins
 chmod 440 /etc/sudoers.d/support
 
+# Script d'analyse des logs (J4)
+# Il appartient a root et seul root peut le modifier : support le lance
+# en root avec sudo, s'il pouvait le modifier il deviendrait root
+cp analyse_logs.sh /usr/local/sbin/analyse_logs.sh
+chown root:root /usr/local/sbin/analyse_logs.sh
+chmod 755 /usr/local/sbin/analyse_logs.sh
+echo "analyse_logs.sh installe dans /usr/local/sbin"
+
 # Mot de passe des admins : il sert pour sudo
 # et pour la console de la VM quand root sera verrouille
 for admin in nicolas leo

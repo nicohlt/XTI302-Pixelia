@@ -278,6 +278,43 @@ test_S5() {
 }
 
 
+# J4 : script d'analyse des logs
+test_J4() {
+    if [ -f /usr/local/sbin/analyse_logs.sh ]; then
+        ok "J4" "analyse_logs.sh est installe"
+    else
+        ko "J4" "analyse_logs.sh absent de /usr/local/sbin"
+    fi
+
+    proprietaire=$(ls -l /usr/local/sbin/analyse_logs.sh | cut -d" " -f3)
+    if [ "$proprietaire" = "root" ]; then
+        ok "J4" "analyse_logs.sh appartient a root"
+    else
+        ko "J4" "analyse_logs.sh appartient a $proprietaire"
+    fi
+
+    if sudo -u support test -w /usr/local/sbin/analyse_logs.sh; then
+        ko "J4" "support peut modifier analyse_logs.sh"
+    else
+        ok "J4" "support ne peut pas modifier analyse_logs.sh"
+    fi
+
+    # Avec un seuil tres haut, il ne doit pas y avoir d'alerte : code 0
+    if /usr/local/sbin/analyse_logs.sh 100000 > /dev/null; then
+        ok "J4" "analyse_logs.sh renvoie 0 sous le seuil"
+    else
+        ko "J4" "analyse_logs.sh ne renvoie pas 0 sous le seuil"
+    fi
+
+    # Avec un seuil qui n'est pas un nombre, il doit refuser
+    if /usr/local/sbin/analyse_logs.sh abc > /dev/null 2>&1; then
+        ko "J4" "analyse_logs.sh accepte un seuil invalide"
+    else
+        ok "J4" "analyse_logs.sh refuse un seuil invalide"
+    fi
+}
+
+
 # Lancement de tous les tests
 test_C1
 test_C2
@@ -288,6 +325,7 @@ test_S2
 test_S3
 test_S4
 test_S5
+test_J4
 
 echo "--- $REUSSIS / $TOTAL tests reussis"
 
