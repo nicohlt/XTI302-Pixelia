@@ -1,4 +1,2 @@
-# Le compte support n'a pas de mot de passe (connexion par cle SSH)
-# donc NOPASSWD, sinon sudo lui demande un mot de passe qu'il n'a pas.
-# Il ne peut lancer QUE ce script en root, rien d'autre.
+# support n'a pas de mot de passe, donc NOPASSWD pour ce seul script
 %support ALL=(root) NOPASSWD: /usr/local/sbin/analyse_logs.sh
