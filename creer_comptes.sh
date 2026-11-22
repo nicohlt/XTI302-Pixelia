@@ -40,8 +40,13 @@ do
   login=$(basename "$fichier" .pub)
     if id "$login" > /dev/null 2>&1; then
       mkdir -p "/home/$login/.ssh"
-      cp "$fichier" "/home/$login/.ssh/authorized_keys"
-
+      touch "/home/$login/.ssh/authorized_keys"
+      
+      # Verifie si la cle SSH est deja presente
+      # Si elle est absente on l'ajoute sans supprimer les autres cles
+      if ! grep -qxF -f "$fichier" "/home/$login/.ssh/authorized_keys"; then
+        cat "$fichier" >> "/home/$login/.ssh/authorized_keys"
+      fi
       chmod 700 "/home/$login/.ssh"
       chmod 600 "/home/$login/.ssh/authorized_keys"
       chown -R "$login" "/home/$login/.ssh"
