@@ -485,6 +485,71 @@ test_J4() {
 }
 
 
+# D2 : aucun service joignable depuis le reseau a part SSH
+test_D2() {
+    # ss -tlnH : les ports TCP en ecoute, sans la ligne de titre
+    # On enleve SSH (port 22) et ce qui n'ecoute qu'en local (127.0.0.1 et ::1)
+    autres_tcp=$(ss -tlnH | grep -v ":22 " | grep -v "127.0.0.1" | grep -v "\[::1\]")
+    if [ -z "$autres_tcp" ]; then
+        ok "D2" "seul SSH ecoute en TCP"
+    else
+        ko "D2" "autre port TCP ouvert : $autres_tcp"
+    fi
+
+    # En UDP, on accepte seulement les clients DHCP (68 en IPv4, 546 en IPv6) :
+    # ils servent a recevoir l'adresse IP de la VM
+    autres_udp=$(ss -ulnH | grep -v ":68 " | grep -v ":546 " | grep -v "127.0.0.1" | grep -v "\[::1\]")
+    if [ -z "$autres_udp" ]; then
+        ok "D2" "aucun port UDP ouvert a part le client DHCP"
+    else
+        ko "D2" "autre port UDP ouvert : $autres_udp"
+    fi
+}
+
+# D3 : pas de fichier modifiable par tous, fichiers SUID connus
+test_D3() {
+    # -xdev : on reste sur le disque systeme, donc on ne fouille pas
+    #         /proc, /sys, /dev, /run et /tmp (systemes de fichiers virtuels)
+    # -prune : on saute /tmp et /var/tmp, les dossiers temporaires
+    # ! -type l : on ignore les liens symboliques (ils sont toujours en 777)
+    # -perm -0002 : modifiable par les autres
+    modifiables=$(find / -xdev \( -path /tmp -o -path /var/tmp \) -prune -o -perm -0002 ! -type l -print 2> /dev/null)
+    if [ -z "$modifiables" ]; then
+        ok "D3" "aucun fichier modifiable par tous hors dossiers temporaires"
+    else
+        ko "D3" "fichiers modifiables par tous : $modifiables"
+    fi
+
+    # Les fichiers SUID de Debian que l'on a verifies (explication dans DOSSIER.md)
+    autorises="/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/usr/lib/openssh/ssh-keysign
+/usr/bin/chfn
+/usr/bin/chsh
+/usr/bin/gpasswd
+/usr/bin/mount
+/usr/bin/umount
+/usr/bin/newgrp
+/usr/bin/passwd
+/usr/bin/su
+/usr/bin/sudo"
+
+    # -perm -4000 : fichiers avec le bit SUID
+    inconnus=0
+    for fichier in $(find / -xdev -type f -perm -4000 2> /dev/null)
+    do
+        # grep -x : la ligne entiere doit etre identique
+        if ! echo "$autorises" | grep -qx "$fichier"; then
+            ko "D3" "fichier SUID inconnu : $fichier"
+            inconnus=1
+        fi
+    done
+
+    if [ "$inconnus" -eq 0 ]; then
+        ok "D3" "tous les fichiers SUID sont connus"
+    fi
+}
+
+
 # B1 : sauvegarde incrementale avec versions datees
 test_B1() {
     if mountpoint -q /sauvegardes; then
@@ -579,6 +644,8 @@ test_D1
 test_B1
 test_B2
 test_B3
+test_D2
+test_D3
 
 echo "--- $tests_reussis / $nombre_tests tests reussis"
 
