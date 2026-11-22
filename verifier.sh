@@ -328,6 +328,38 @@ test_J2() {
     fi
 }
 
+# J3 : journal persistant
+test_J3() {
+    if grep -q "^Storage=persistent" /etc/systemd/journald.conf.d/10-persistent.conf 2> /dev/null; then
+        ok "J3" "Storage=persistent est configure"
+    else
+        ko "J3" "Storage=persistent n'est pas configure"
+    fi
+
+    # Le journal persistant est ecrit dans ce dossier
+    if [ -d /var/log/journal ]; then
+        ok "J3" "le dossier /var/log/journal existe"
+    else
+        ko "J3" "le dossier /var/log/journal n'existe pas"
+    fi
+}
+
+# D1 : mises a jour de securite automatiques
+test_D1() {
+    if dpkg -l unattended-upgrades 2> /dev/null | grep -q "^ii"; then
+        ok "D1" "unattended-upgrades est installe"
+    else
+        ko "D1" "unattended-upgrades n'est pas installe"
+    fi
+
+    # apt-config dump affiche la configuration reellement appliquee par apt
+    if apt-config dump | grep -q 'APT::Periodic::Unattended-Upgrade "1"'; then
+        ok "D1" "les mises a jour automatiques sont activees"
+    else
+        ko "D1" "les mises a jour automatiques ne sont pas activees"
+    fi
+}
+
 # J4 : script d'analyse des logs
 test_J4() {
     if [ -f /usr/local/sbin/analyse_logs.sh ]; then
@@ -377,7 +409,9 @@ test_S4
 test_S5
 test_J1
 test_J2
+test_J3
 test_J4
+test_D1
 
 echo "--- $REUSSIS / $TOTAL tests reussis"
 

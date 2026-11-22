@@ -16,7 +16,7 @@ fi
 
 # Paquets
 apt-get update
-apt-get install -y sudo acl nftables fail2ban python3-systemd
+apt-get install -y sudo acl nftables fail2ban python3-systemd unattended-upgrades
 echo "Paquets installes"
 
 # Comptes, groupes, cles SSH et dossiers /srv
@@ -102,5 +102,16 @@ else
     echo "Erreur dans la configuration fail2ban" >&2
     exit 5
 fi
+
+# Journal persistant (J3)
+mkdir -p /etc/systemd/journald.conf.d
+cp config/journald.conf.d/10-persistent.conf /etc/systemd/journald.conf.d/10-persistent.conf
+systemctl restart systemd-journald
+echo "Journal persistant configure"
+
+# Mises a jour de securite automatiques (D1)
+cp config/apt/20auto-upgrades /etc/apt/apt.conf.d/20auto-upgrades
+systemctl enable unattended-upgrades
+echo "Mises a jour automatiques configurees"
 
 echo "Installation terminee"
