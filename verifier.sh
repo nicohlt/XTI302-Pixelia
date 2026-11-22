@@ -278,6 +278,56 @@ test_S5() {
 }
 
 
+# J1 : fail2ban protege SSH
+test_J1() {
+    if systemctl is-active fail2ban > /dev/null; then
+        ok "J1" "fail2ban est demarre"
+    else
+        ko "J1" "fail2ban n'est pas demarre"
+    fi
+
+    if fail2ban-client status sshd > /dev/null 2>&1; then
+        ok "J1" "la jail sshd est active"
+    else
+        ko "J1" "la jail sshd n'est pas active"
+    fi
+
+    # Si on lit 3, notre fichier est bien pris en compte
+    essais=$(fail2ban-client get sshd maxretry 2> /dev/null)
+    if [ "$essais" = "3" ]; then
+        ok "J1" "bannissement apres 3 echecs"
+    else
+        ko "J1" "maxretry vaut '$essais' (attendu : 3)"
+    fi
+}
+
+# J2 : pare-feu nftables
+test_J2() {
+    if systemctl is-enabled nftables > /dev/null; then
+        ok "J2" "nftables se lance au demarrage"
+    else
+        ko "J2" "nftables ne se lance pas au demarrage"
+    fi
+
+    if nft list chain inet filtre input 2> /dev/null | grep -q "policy drop"; then
+        ok "J2" "politique par defaut : drop"
+    else
+        ko "J2" "la politique par defaut n'est pas drop"
+    fi
+
+    if nft list chain inet filtre input 2> /dev/null | grep -q "tcp dport 22 accept"; then
+        ok "J2" "SSH (port 22) autorise"
+    else
+        ko "J2" "SSH (port 22) n'est pas autorise"
+    fi
+
+    if nft list chain inet filtre input 2> /dev/null | grep -q "ct state established,related accept"; then
+        ok "J2" "connexions etablies autorisees"
+    else
+        ko "J2" "connexions etablies non autorisees"
+    fi
+}
+
 # J4 : script d'analyse des logs
 test_J4() {
     if [ -f /usr/local/sbin/analyse_logs.sh ]; then
@@ -325,6 +375,8 @@ test_S2
 test_S3
 test_S4
 test_S5
+test_J1
+test_J2
 test_J4
 
 echo "--- $REUSSIS / $TOTAL tests reussis"

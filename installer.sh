@@ -16,7 +16,7 @@ fi
 
 # Paquets
 apt-get update
-apt-get install -y sudo acl
+apt-get install -y sudo acl nftables fail2ban python3-systemd
 echo "Paquets installes"
 
 # Comptes, groupes, cles SSH et dossiers /srv
@@ -77,6 +77,30 @@ if sshd -t; then
 else
     echo "Erreur dans la configuration SSH"
     exit 1
+fi
+
+# Pare-feu nftables (J2)
+# nft -c verifie le fichier sans l'appliquer
+if nft -c -f config/nftables.conf; then
+    cp config/nftables.conf /etc/nftables.conf
+    # enable : le pare-feu redemarre tout seul apres un reboot
+    systemctl enable nftables
+    systemctl restart nftables
+    echo "Pare-feu configure"
+else
+    echo "Erreur dans config/nftables.conf" >&2
+    exit 4
+fi
+
+# fail2ban (J1), apres nftables car il ajoute ses regles dans le pare-feu
+cp config/fail2ban/jail.d/pixelia.conf /etc/fail2ban/jail.d/pixelia.conf
+if fail2ban-client -t; then
+    systemctl enable fail2ban
+    systemctl restart fail2ban
+    echo "fail2ban configure"
+else
+    echo "Erreur dans la configuration fail2ban" >&2
+    exit 5
 fi
 
 echo "Installation terminee"
