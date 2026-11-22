@@ -229,6 +229,14 @@ test_C3() {
         else
             ok "C3" "$utilisateur n'est pas dans le groupe admins"
         fi
+
+        # sudo -l lit les vraies regles sudo : il trouve aussi une regle
+        # ajoutee directement pour l'utilisateur dans /etc/sudoers.d/
+        if sudo -l -U "$utilisateur" | grep -q "ALL"; then
+            ko "C3" "$utilisateur a des droits sudo"
+        else
+            ok "C3" "$utilisateur n'a aucun droit sudo"
+        fi
     done
 
     # Le groupe sudo doit etre vide
@@ -572,8 +580,7 @@ test_B1
 test_B2
 test_B3
 
-echo "----------------------------"
-echo "$tests_reussis tests reussis sur $nombre_tests"
+echo "--- $tests_reussis / $nombre_tests tests reussis"
 
 if [ "$tests_reussis" -eq "$nombre_tests" ]; then
     exit 0
