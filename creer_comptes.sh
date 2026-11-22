@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+# On fixe le PATH : avec "su -c" il ne contient pas /usr/sbin
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
 # Date de fin du semestre : les comptes freelance expirent ce jour la
 DATE_FIN="2027-01-31"
 

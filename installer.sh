@@ -4,6 +4,10 @@
 
 set -euo pipefail
 
+# On fixe le PATH : avec "su -c" il ne contient pas /usr/sbin
+# (la ou sont groupadd, useradd, visudo...)
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
 if [ "$EUID" -ne 0 ]; then
     echo "Il faut lancer ce script avec sudo"
     exit 1
