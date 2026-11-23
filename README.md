@@ -14,6 +14,7 @@ git clone https://github.com/nicohlt/XTI302-Pixelia.git
 cd XTI302-Pixelia
 su -c 'bash installer.sh'
 ```
+`ssh -t -p 2225 -i C:\Users\Leo\.ssh\id_pixelia leo@127.0.0.1`  
 
 Si sudo est déjà installé : `sudo bash installer.sh`
 
